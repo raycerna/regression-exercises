@@ -41,20 +41,20 @@ def optimize_types(df):
     # Convert some columns to integers
     # fips, yearbuilt, and bedrooms can be integers
     df["fips"] = df["fips"].astype(int)
-    df["yearbuilt"] = df["yearbuilt"].astype(int)
-    df["bedroomcnt"] = df["bedroomcnt"].astype(int)    
-    df["taxvaluedollarcnt"] = df["taxvaluedollarcnt"].astype(int)
-    df["calculatedfinishedsquarefeet"] = df["calculatedfinishedsquarefeet"].astype(int)
+    df["year_built"] = df["year_built"].astype(int)
+    df["bedrooms"] = df["bedrooms"].astype(int)    
+    df["tax_value"] = df["tax_value"].astype(int)
+    df["area"] = df["area"].astype(int)
     return df
 
 
 def handle_outliers(df):
     """Manually handle outliers that do not represent properties likely for 99% of buyers and zillow visitors"""
-    df = df[df.bathroomcnt <= 6]
+    df = df[df.bathrooms <= 6]
     
-    df = df[df.bedroomcnt <= 6]
+    df = df[df.bedrooms <= 6]
 
-    df = df[df.taxvaluedollarcnt < 2_000_000]
+    df = df[df.tax_value < 2_000_000]
 
     return df
 
