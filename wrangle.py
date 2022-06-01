@@ -1,54 +1,33 @@
 import pandas as pd
-import numpy as np
 import os
-from env import host, user, password
+from env import get_db_url
 
-def get_connection(db, user=user, host=host, password=password):
-    '''
-    This function uses my info from my env file to
-    create a connection url to access the Codeup db.
-    It takes in a string name of a database as an argument.
-    '''
-    return f'mysql+pymysql://{user}:{password}@{host}/{db}'
+"""
+USAGE: 
+Use `from wrangle import wrangle_zillow` at the top of your notebook.
+This 
 
-
+"""
 def get_zillow_data():
-    '''
-    This function reads in data from Codeup database, writes data to
-    a csv file if a local file does not exist, and returns a df.
-    '''
-    if os.path.isfile('zillow.csv'):
-        
-        # If csv file exists read in data from csv file.
-        df = pd.read_csv('zillow.csv', index_col=0)
-        
+    """Seeks to read the cached zillow.csv first """
+    filename = "zillow.csv"
+
+    if os.path.isfile(filename):
+        return pd.read_csv(filename)
     else:
-        
-        # Read fresh data from db into a DataFrame
-        df = new_zillow_data()
-        
-        # Cache data
-        df.to_csv('zillow.csv')
-        
-    return df
+        return get_new_zillow_data()
 
+def get_new_zillow_data():
+    """Returns a dataframe of all 2017 properties that are Single Family Residential"""
 
-def new_zillow_data():
-    sql_query = """
-            
-SELECT bedroomcnt, bathroomcnt, calculatedfinishedsquarefeet, taxvaluedollarcnt, yearbuilt, taxamount, fips
-FROM properties_2017
-
-LEFT JOIN propertylandusetype USING(propertylandusetypeid)
-
-WHERE propertylandusedesc IN ("Single Family Residential",                       
-                              "Inferred Single Family Residential")"""
-    
-    # Read in DataFrame from Codeup db.
-    df = pd.read_sql(sql_query, get_connection('zillow'))
-    
-    return df
-
+    sql = """
+    select 
+    bedroomcnt, bathroomcnt, calculatedfinishedsquarefeet, taxvaluedollarcnt, yearbuilt, taxamount, fips
+    from properties_2017
+    join propertylandusetype using (propertylandusetypeid)
+    where propertylandusedesc = "Single Family Residential"
+    """
+    return pd.read_sql(sql, get_db_url("zillow"))
 
 
 def handle_nulls(df):    
@@ -57,33 +36,34 @@ def handle_nulls(df):
     df = df.dropna()
     return df
 
-def handle_rename(df):
-    #renames the columns that are too long
-    df = df.rename(columns = {'bedroomcnt':'bedrooms', 'bathroomcnt':'bathrooms', 'calculatedfinishedsquarefeet':'area', 'taxvaluedollarcnt':'tax_value', 'yearbuilt':'year_built'})
 
-    return df
-    
 def optimize_types(df):
     # Convert some columns to integers
     # fips, yearbuilt, and bedrooms can be integers
     df["fips"] = df["fips"].astype(int)
-    df["year_built"] = df["year_built"].astype(int)
-    df["bedrooms"] = df["bedrooms"].astype(int)    
-    df["tax_value"] = df["tax_value"].astype(int)
-    df["area"] = df["area"].astype(int)
+    df["yearbuilt"] = df["yearbuilt"].astype(int)
+    df["bedroomcnt"] = df["bedroomcnt"].astype(int)    
+    df["taxvaluedollarcnt"] = df["taxvaluedollarcnt"].astype(int)
+    df["calculatedfinishedsquarefeet"] = df["calculatedfinishedsquarefeet"].astype(int)
     return df
-
 
 
 def handle_outliers(df):
     """Manually handle outliers that do not represent properties likely for 99% of buyers and zillow visitors"""
-    df = df[df.bathrooms <= 6]
+    df = df[df.bathroomcnt <= 6]
     
-    df = df[df.bedrooms <= 6]
+    df = df[df.bedroomcnt <= 6]
 
-    df = df[df.tax_value < 2_000_000]
+    df = df[df.taxvaluedollarcnt < 2_000_000]
 
     return df
+
+def rename_columns(df):
+    # renaming columns
+    df = df.rename(columns = {'bedroomcnt':'bedrooms', 'bathroomcnt':'bathrooms', 'calculatedfinishedsquarefeet':'area', 'taxvaluedollarcnt':'tax_value', 'yearbuilt':'year_built'})
+
+    return df
+
 
 def wrangle_zillow():
     """
@@ -97,14 +77,18 @@ def wrangle_zillow():
 
     df = handle_nulls(df)
 
-    df = handle_rename(df)
-
     df = optimize_types(df)
 
     df = handle_outliers(df)
+
+    df = rename_columns(df)
 
     df.to_csv("zillow.csv", index=False)
 
     return df
 
-###
+
+## TODO Encode categorical variables (and FIPS is a category so Fips to string to one-hot-encoding
+## TODO Scale numeric columns
+## TODO Add train/validate/test split in here
+## TODO How to handle 0 bedroom, 0 bathroom homes? Drop them? How many? They're probably clerical nulls
