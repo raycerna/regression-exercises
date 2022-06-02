@@ -88,6 +88,7 @@ def wrangle_zillow():
     return df
 
 
+
 ## TODO Encode categorical variables (and FIPS is a category so Fips to string to one-hot-encoding
 ## TODO Scale numeric columns
 ## TODO Add train/validate/test split in here
