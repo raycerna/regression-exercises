@@ -60,7 +60,7 @@ def handle_outliers(df):
 
 def rename_columns(df):
     # renaming columns
-    df = df.rename(columns = {'bedroomcnt':'bedrooms', 'bathroomcnt':'bathrooms', 'calculatedfinishedsquarefeet':'area', 'taxvaluedollarcnt':'tax_value', 'yearbuilt':'year_built'})
+    df = df.rename(columns = {'bedroomcnt':'bedrooms', 'bathroomcnt':'bathrooms', 'calculatedfinishedsquarefeet':'area', 'taxvaluedollarcnt':'tax_value', 'taxamount':'tax_amount','yearbuilt':'year_built'})
 
     return df
 
